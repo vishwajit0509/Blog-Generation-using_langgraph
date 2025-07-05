@@ -95,14 +95,13 @@ class BlogNode:
 
     def route_decision(self, state: BlogState):
         """
-        Route the content to the respective translation function.
-        """
-        if state["current_language"] == "hindi":
-            return "hindi"
-        elif state["current_language"] == "french":
-            return "french"
-        else:
-            return state["current_language"]
+    Route to the appropriate translation node based on selected language.
+
+    This assumes that the graph has nodes named as '<language>_translation'.
+    """
+        language = state.get("current_language", "").lower()
+        return language  # e.g., "french", "spanish", "german"
+
     
         
         
