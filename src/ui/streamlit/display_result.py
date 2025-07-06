@@ -1,5 +1,3 @@
-# src/ui/streamlit/display_result.py
-
 import streamlit as st
 
 def show_blog_result(blog_data):
@@ -10,6 +8,7 @@ def show_blog_result(blog_data):
     blog = blog_data.get("blog", {})
     title = blog.get("title", "Untitled")
     content = blog.get("content", "No content generated.")
+    audio_url = blog_data.get("voice_output")
 
     st.markdown("---")
     st.subheader("📌 Blog Title")
@@ -18,6 +17,11 @@ def show_blog_result(blog_data):
     st.markdown("---")
     st.subheader("📄 Blog Content")
     st.markdown(content, unsafe_allow_html=True)
+
+    if audio_url:
+        st.markdown("---")
+        st.subheader("🔊 AI Voice Narration")
+        st.audio(audio_url)
 
     st.markdown("---")
     st.success("✅ Blog generated successfully!")

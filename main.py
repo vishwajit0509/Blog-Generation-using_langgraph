@@ -9,18 +9,22 @@ def main():
         layout="centered"
     )
 
-    st.markdown("# 🌍 Multilingual AI Blog Generator")
+    st.title("🌍 Multilingual AI Blog Generator")
     st.markdown(
-        "Generate engaging blog content in English, Hindi, or French using AI. "
-        "Enter your topic, select a language, and let the AI do the writing!"
+        """
+        Generate engaging blog content using AI in multiple languages like **English**, **Hindi**, **French**, and more!
+        Just enter a topic, select the output language, and let AI write and narrate it for you.
+        """
     )
 
     st.markdown("---")
 
+    # 🔽 Render Input Form and trigger generation
     blog_data = render_input_ui()
 
     st.markdown("---")
 
+    # ✅ Display blog content and audio if available
     if blog_data:
         show_blog_result(blog_data)
 

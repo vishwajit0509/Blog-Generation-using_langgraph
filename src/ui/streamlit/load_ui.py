@@ -2,7 +2,7 @@
 
 import streamlit as st
 import requests
-from src.ui.streamlit.display_result import show_blog_result  
+from src.ui.streamlit.display_result import show_blog_result
 
 API_URL = "http://localhost:8000/blogs"
 
@@ -24,9 +24,14 @@ def render_input_ui():
                 try:
                     response = requests.post(API_URL, json=payload)
                     if response.status_code == 200:
-                        return response.json().get("data")
-                        ##show_blog_result(blog_data)
-                        ##return blog_data  # ✅ Return data so main.py can use it too
+                        blog_data = response.json().get("data", {})
+                        if blog_data:
+                            show_blog_result(blog_data)  # Displays title/content
+                            if blog_data.get("voice_output"):
+                                st.audio(blog_data["voice_output"], format="audio/mp3")
+                            return blog_data
+                        else:
+                            st.warning("No blog data returned from the backend.")
                     else:
                         st.error(f"Error {response.status_code}: {response.text}")
                 except Exception as e:

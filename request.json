@@ -1,8 +1,16 @@
-{
-    "topic":"Agentic AI"
-}
-
-{
-    "topic":"Agentic AI",
-    "language":"french"
-}
+[
+  {
+    "usecase": "topic",
+    "topic": "Agentic AI"
+  },
+  {
+    "usecase": "language", 
+    "topic": "Agentic AI",
+    "language": "french"
+  },
+  {
+    "usecase": "voice",
+    "audio_path": "./voice_inputs/agentic_ai.mp3", 
+    "language": "english"
+  }
+]

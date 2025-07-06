@@ -7,3 +7,5 @@ fastapi
 uvicorn
 watchdog
 langchain-cli[inmem]
+assemblyai
+cartesia

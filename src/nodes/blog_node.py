@@ -1,107 +1,171 @@
-from src.states.blogstate import BlogState
+from src.states.blogstate import BlogState, Language
 from langchain_core.messages import SystemMessage, HumanMessage
-from src.states.blogstate import Blog
+import assemblyai as aai
+import os
+import requests
+from pydub import AudioSegment
+from typing import Dict, Any
+import logging
+
+# Configure audio converter path
+AudioSegment.converter = "C:\\ffmpeg\\bin\\ffmpeg.exe"  # replace path if different
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 class BlogNode:
-    """
-    A class to represent the  blog node
-    """
-
-    def __init__(self,llm):
+    """Handles blog generation pipeline including text and voice processing."""
+    
+    def __init__(self, llm):
         self.llm = llm
+        aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
+        self.assemblyai_client = aai
+        self.supported_languages = [lang.value for lang in Language]
 
-    def title_creation(self,state:BlogState):
-        """
-        create the title
-        """
-        if "topic" in state and state["topic"]:
-            prompt="""
-                   You are aan expert blog content writer.Use markdown formatting . Generate a blog title for the {topic}.This title should be creative
+    def voice_input_node(self, state: BlogState) -> Dict[str, Any]:
+        """Transcribe voice file to text using AssemblyAI."""
+        voice_path = state.get("voice_input_path")
+        if not voice_path:
+            raise ValueError("Missing voice_input_path in state")
 
-                 """
-            
-            system_messgae= prompt.format(topic=state["topic"])
-            response = self.llm.invoke(system_messgae)
-            return {"blog":{"title":response.content}}
-        
-    def content_generation(self,state:BlogState):
-        if "topic" in state and state["topic"]:
-            system_prompt = """You are expert blog writer. Use Markdown formatting.
-            Generate a detailed blog content with detailed breakdown for the {topic}""" 
-            system_message = system_prompt.format(topic=state["topic"])
-            response = self.llm.invoke(system_message)
-            return {"blog": {"title": state['blog']['title'], "content": response.content}} 
-
-    def translation(self, state: BlogState):
-        """
-        Translate the content to the specified language.
-    
-    Args:
-        state: BlogState containing 'blog' and 'current_language'
-        
-    Returns:
-        dict: Translated blog content with same structure
-        """
-        translation_prompt = """
-    You are an expert translator. Translate the following blog content into {current_language}:
-    - Maintain the original tone, style, and formatting
-    - Keep all markdown formatting intact
-    - Adapt cultural references appropriately
-    - Do not change the structure or headings
-    
-    ORIGINAL CONTENT:
-    {blog_content}
-    
-    TRANSLATION:
-    """
-
-    # Prepare the messages properly for the chat model
-        messages = [
-        SystemMessage(content="You are a professional translator."),
-        HumanMessage(
-            content=translation_prompt.format(
-                current_language=state['current_language'],
-                blog_content=state['blog']['content']
-            )
-        )
-    ]
-    
         try:
-        # First try without structured output to see if translation works
-            translation_result = self.llm.invoke(messages)
-        
+            logger.info(f"Starting transcription for {voice_path}")
+            transcriber = self.assemblyai_client.Transcriber()
+            transcript = transcriber.transcribe(voice_path)
+            logger.info(f"Transcription complete: {len(transcript.text)} characters")
+            
             return {
-            "blog": {
-                "title": state['blog']['title'],  # Keep original title or translate separately
-                "content": translation_result.content
+                "topic": transcript.text,
+                "voice_transcript": transcript.text,
+                "language": state.get("language", "english")  # Preserve language
             }
-        }
-        
         except Exception as e:
-        # Fallback to non-structured output if structured fails
-            print(f"Structured output failed, trying regular translation: {str(e)}")
-            translation_result = self.llm.invoke(messages)
+            logger.error(f"Transcription failed: {e}")
+            raise
+
+    def title_creation(self, state: BlogState) -> Dict[str, Any]:
+        """Generate blog title based on topic."""
+        topic = state.get("topic", "")
+        language = state.get("language", "english")
         
-            return {
-             "blog": {
+        if not topic:
+            return {}
+            
+        prompt = f"""
+        You are an expert blog content writer. Use markdown formatting.
+        Generate a creative, engaging blog title in {language} for the topic: '{topic}'
+        Return ONLY the title text without any additional commentary.
+        """
+        
+        response = self.llm.invoke(prompt)
+        return {"blog": {"title": response.content.strip()}}
+
+    def content_generation(self, state: BlogState) -> Dict[str, Any]:
+        """Generate full blog content."""
+        topic = state.get("topic", "")
+        language = state.get("language", "english")
+        
+        if not topic or "blog" not in state or "title" not in state["blog"]:
+            return {}
+            
+        prompt = f"""
+        You are an expert blog writer. Write in {language} using Markdown formatting.
+        Topic: {topic}
+        Title: {state['blog']['title']}
+        
+        Requirements:
+        - 500-800 words
+        - Use headings (##) and subheadings (###)
+        - Include bullet points and numbered lists where appropriate
+        - Maintain professional but accessible tone
+        """
+        
+        response = self.llm.invoke(prompt)
+        return {
+            "blog": {
                 "title": state['blog']['title'],
-                "content": translation_result.content
+                "content": response.content
             }
         }
 
-    def route(self,state:BlogState):
-        return {"current_language":state['current_language']}
-
-
-    def route_decision(self, state: BlogState):
+    def translation(self, state: BlogState) -> Dict[str, Any]:
+        """Translate blog content to target language."""
+        target_lang = state.get("current_language", "english")
+        content = state.get("blog", {}).get("content", "")
+        
+        if not content:
+            return {}
+            
+        translation_prompt = f"""
+        Translate this blog post to {target_lang} while:
+        - Preserving markdown formatting
+        - Maintaining technical accuracy
+        - Keeping headings and structure
+        - Adapting cultural references appropriately
+        
+        Content to translate:
+        {content}
         """
-    Route to the appropriate translation node based on selected language.
-
-    This assumes that the graph has nodes named as '<language>_translation'.
-    """
-        language = state.get("current_language", "").lower()
-        return language  # e.g., "french", "spanish", "german"
-
-    
         
+        messages = [
+            SystemMessage(content=f"You are a professional {target_lang} translator."),
+            HumanMessage(content=translation_prompt)
+        ]
         
+        try:
+            translation_result = self.llm.invoke(messages)
+            return {
+                "blog": {
+                    "title": state['blog']['title'],
+                    "content": translation_result.content
+                }
+            }
+        except Exception as e:
+            logger.error(f"Translation failed: {e}")
+            raise
+
+    def voice_output_node(self, state: BlogState) -> Dict[str, Any]:
+        """Convert blog content to speech using Cartesia API."""
+        content = state.get("blog", {}).get("content", "")
+        if not content:
+            return {}
+            
+        try:
+            api_key = os.getenv("CARTESIA_API_KEY")
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            }
+            payload = {
+                "text": content,
+                "voice": "nova",
+                "output_format": "mp3"
+            }
+            
+            response = requests.post(
+                "https://api.cartesia.ai/v1/speech",
+                json=payload,
+                headers=headers,
+                timeout=30
+            )
+            response.raise_for_status()
+            
+            return {
+                "voice_output": response.json().get("audio_url"),
+                "current_language": state.get("current_language")
+            }
+        except Exception as e:
+            logger.error(f"Voice generation failed: {e}")
+            return {}
+
+    def route(self, state: BlogState) -> Dict[str, Any]:
+        """Pass-through node for logging."""
+        logger.info(f"Routing state with language: {state.get('language')}")
+        return state
+
+    def route_decision(self, state: BlogState) -> str:
+        """Determine which translation branch to take."""
+        lang = state.get("language", "english").lower()
+        logger.info(f"Routing decision for language: {lang}")
+        return lang if lang in self.supported_languages else "english"
