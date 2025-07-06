@@ -9,3 +9,6 @@ watchdog
 langchain-cli[inmem]
 assemblyai
 cartesia
+python-multipart
+git+https://github.com/stefanrmmr/streamlit-audio-recorder.git
+elevenlabs

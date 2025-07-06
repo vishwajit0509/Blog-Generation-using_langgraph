@@ -6,6 +6,7 @@ import requests
 from pydub import AudioSegment
 from typing import Dict, Any
 import logging
+from elevenlabs.client import ElevenLabs
 
 # Configure audio converter path
 AudioSegment.converter = "C:\\ffmpeg\\bin\\ffmpeg.exe"  # replace path if different
@@ -22,6 +23,7 @@ class BlogNode:
         aai.settings.api_key = os.getenv("ASSEMBLYAI_API_KEY")
         self.assemblyai_client = aai
         self.supported_languages = [lang.value for lang in Language]
+        self.elevenlabs_client = None 
 
     def voice_input_node(self, state: BlogState) -> Dict[str, Any]:
         """Transcribe voice file to text using AssemblyAI."""
@@ -126,38 +128,53 @@ class BlogNode:
             raise
 
     def voice_output_node(self, state: BlogState) -> Dict[str, Any]:
-        """Convert blog content to speech using Cartesia API."""
+        """Convert blog content to speech using ElevenLabs API and save locally.
+        Args:
+        state: Current blog state containing content to convert
+        Returns:
+        Dict with either
+        - voice_output path and language on success
+        - error message on failure
+        """
         content = state.get("blog", {}).get("content", "")
         if not content:
+            logger.warning("No content available for voice generation")
             return {}
-            
         try:
-            api_key = os.getenv("CARTESIA_API_KEY")
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            }
-            payload = {
-                "text": content,
-                "voice": "nova",
-                "output_format": "mp3"
-            }
-            
-            response = requests.post(
-                "https://api.cartesia.ai/v1/speech",
-                json=payload,
-                headers=headers,
-                timeout=30
-            )
-            response.raise_for_status()
-            
+            # Initialize ElevenLabs client
+            api_key = os.getenv("ELEVENLABS_API_KEY")
+            if not api_key:
+                raise ValueError("ElevenLabs API key not configured")  # Fixed: added 'raise'
+            # Configure voice settings
+            voice = "Rachel"  # Default voice (free tier)
+            model = "eleven_monolingual_v2"  # Free model
+        
+        
+            client = ElevenLabs(api_key=api_key)
+            audio = client.generate(
+            text=content,
+            voice=voice,
+            model=model
+        )
+        
+        # Save to temporary file
+            output_path = "temp_audio_output.mp3"
+            try:
+                with open(output_path, "wb") as f:
+                    f.write(audio)  # ElevenLabs returns bytes directly
+            except IOError as e:
+                logger.error(f"Failed to save audio file: {e}")
+                return {"error": f"Could not save audio file: {str(e)}"}
+        
             return {
-                "voice_output": response.json().get("audio_url"),
-                "current_language": state.get("current_language")
-            }
+            "voice_output": output_path,
+            "current_language": state.get("current_language")
+        }
+
         except Exception as e:
-            logger.error(f"Voice generation failed: {e}")
-            return {}
+            logger.error(f"Voice generation failed: {e}", exc_info=True)
+            return {"error": str(e)}
+
 
     def route(self, state: BlogState) -> Dict[str, Any]:
         """Pass-through node for logging."""
