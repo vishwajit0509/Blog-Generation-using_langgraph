@@ -13,22 +13,22 @@ A multi-modal AI system that generates blogs from text/voice input with language
 
 ## 📂 Project Structure
 
-'''BLOG-GENERATION/
-├── blog/ # Virtual environment
-├── src/ # Core source code
-│ ├── llms/ # LLM integrations
-│ ├── nodes/ # Workflow nodes
-│ ├── states/ # State management
-│ └── ui/ # Streamlit interface
-├── static/ # Static assets
-├── temp_audio/ # Generated voice files
-├── .env # Environment variables
-├── app.py # FastAPI backend
-├── frontend.py # Streamlit frontend
-├── pyproject.toml # Project config
-├── requirements.txt # Python dependencies
-└── langgraph.json # Workflow configuration
-'''
+BLOG-GENERATION/
+├── blog/                  # Virtual environment
+├── src/                   # Core source code
+│   ├── llms/              # LLM integrations
+│   ├── nodes/             # Workflow nodes
+│   ├── states/            # State management
+│   └── ui/                # Streamlit interface
+├── static/                # Static assets
+├── temp_audio/            # Generated voice files
+├── .env                   # Environment variables
+├── app.py                 # FastAPI backend
+├── frontend.py            # Streamlit frontend
+├── pyproject.toml         # Project config
+├── requirements.txt       # Python dependencies
+└── langgraph.json         # Workflow configuration
+
 
 
 ## 🚀 Quick Start
