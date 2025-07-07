@@ -53,12 +53,8 @@ uv pip install -r requirements.txt
 # Start backend (FastAPI)
 python app.py
 
-![Backend](C:\Users\vishw\OneDrive\Desktop\AGENTIC AI\BLOG-GENERATION\images\backend.png)
-
-
 # Start frontend (Streamlit)
-
 streamlit run main.py
 
-![Backend](C:\Users\vishw\OneDrive\Desktop\AGENTIC AI\BLOG-GENERATION\images\frontend.png)
+
 
