@@ -10,7 +10,8 @@ from typing import Optional
 from elevenlabs.client import ElevenLabs
 import io
 import logging
-
+from starlette.background import BackgroundTask
+import io
 from src.llms.groqllm import GroqLLM
 from src.graphs.graph_builder import GraphBuilder
 from src.states.blogstate import Language, validate_audio_path
@@ -49,9 +50,14 @@ app.add_middleware(
 # Serve static files
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# LangSmith Setup (if used)
-os.environ["LANGSMITH_API_KEY"] = os.getenv("LANGCHAIN_API_KEY")
-os.environ["LANGCHAIN_PROJECT"] = os.getenv("LANGCHAIN_PROJECT", "Blog-Generation")
+def cleanup_temp_file(path: str):
+    """Helper function to clean up temporary files"""
+    if path and os.path.exists(path):
+        try:
+            os.remove(path)
+            logger.info(f"Removed temporary file: {path}")
+        except Exception as e:
+            logger.error(f"Failed to remove temporary file {path}: {str(e)}")
 
 @app.post("/blogs")
 async def create_blogs(
@@ -66,8 +72,9 @@ async def create_blogs(
 ):
     """
     Handles both text and voice input with text/voice output options
-    Now with ElevenLabs streaming for voice output
+    with improved ElevenLabs streaming implementation
     """
+    temp_path = None
     try:
         language = language.lower()
         if language not in [lang.value for lang in Language]:
@@ -76,7 +83,7 @@ async def create_blogs(
                 status_code=400
             )
 
-        # Initialize state with all parameters
+        # Initialize state
         state = {
             "language": language,
             "current_language": language,
@@ -84,88 +91,84 @@ async def create_blogs(
             "length": length
         }
 
-        # Handle voice input
+        # Handle input
         if input_type == "voice":
             if not voice_input:
                 return JSONResponse({"error": "Voice file required when input_type=voice"}, status_code=400)
-
+            
             temp_path = f"temp_{voice_input.filename}"
             with open(temp_path, "wb") as f:
-                f.write(await voice_input.read())
-
+                shutil.copyfileobj(voice_input.file, f)
+            
             try:
                 validate_audio_path(temp_path)
                 state["voice_input_path"] = temp_path
-                logger.info(f"Voice input saved to {temp_path}")
             except Exception as e:
                 logger.error(f"Invalid audio file: {str(e)}")
                 return JSONResponse({"error": f"Invalid audio file: {str(e)}"}, status_code=400)
-
-        # Handle text input
         elif input_type == "text":
             if not text_input:
                 return JSONResponse({"error": "Text input required when input_type=text"}, status_code=400)
             state["topic"] = text_input.strip()
 
-        # Decide which graph to use
+        # Process request
         usecase = "voice" if input_type == "voice" else "language" if language != "english" else "topic"
-        logger.info(f"Using graph for usecase: {usecase}")
-
-        # Execute graph
         llm = GroqLLM().get_llm()
         graph = GraphBuilder(llm).setup_graph(usecase)
         result = graph.invoke(state)
 
-        # Clean up temp voice file if exists
-        if input_type == "voice" and os.path.exists(temp_path):
-            os.remove(temp_path)
-            logger.info(f"Removed temporary voice file: {temp_path}")
-
-        # Handle voice output with ElevenLabs streaming
+        
+        # Voice output with proper streaming
         if output_type == "voice":
             content = result.get("blog", {}).get("content", "")
             if not content:
-                logger.error("No content available for voice generation")
                 return JSONResponse({"error": "No content to convert to speech"}, status_code=400)
 
-            try:
-                # Get appropriate voice for language
-                voice = VOICE_MAPPING.get(language, "Rachel")
-                logger.info(f"Generating voice output with voice: {voice}")
+            voice_id = {
+        "english": "EXAVITQu4vr4xnSDxMaL",  # Rachel
+        "hindi": "AZnzlk1XvdvUeBnXmlld",    # Domi
+        "french": "XB0fDUnXU5powFXDhCwa",    # Bella
+        "spanish": "ErXwobaYiN019PkySvjV",   # Antoni
+        "german": "MF3mGyEYCl7XYWbV9V6O"     # Elli
+    }.get(language, "EXAVITQu4vr4xnSDxMaL")  # Default to Rachel
 
-                # Generate streaming audio
-                audio_stream = ELEVENLABS_CLIENT.generate(
-                    text=content,
-                    voice=voice,
-                    model="eleven_monolingual_v2",
-                    stream=True
-                )
-                
-                # Convert generator to bytes
-                audio_bytes = b"".join([chunk for chunk in audio_stream])
-                audio_file = io.BytesIO(audio_bytes)
-                
-                # Prepare response with metadata in headers
-                headers = {
-                    "title": result.get("blog", {}).get("title", ""),
-                    "content-length": str(len(audio_bytes)),
-                    "language": language
-                }
-                
-                return StreamingResponse(
-                    audio_file,
-                    media_type="audio/mp3",
-                    headers=headers
-                )
+            logger.info(f"Generating voice output with voice ID: {voice_id}")
 
-            except Exception as e:
-                logger.error(f"Voice generation failed: {str(e)}")
-                return JSONResponse(
-                    {"error": "Voice generation failed", "details": str(e)},
-                    status_code=500
-                )
+    # Create streaming response
+            def generate_audio():
+                try:
+                    audio_generator = ELEVENLABS_CLIENT.text_to_speech.convert(
+                text=content,
+                voice_id=voice_id,
+                model_id="eleven_monolingual_v1",
+                output_format="mp3_44100_128"
+            )
+            
+            # Stream the audio chunks directly
+                    for chunk in audio_generator:
+                        yield chunk
+                
+                except Exception as e:
+                    logger.error(f"Streaming error: {str(e)}")
+                    raise
 
-        # Text response
+    # Cleanup task
+            cleanup = BackgroundTask(cleanup_temp_file, temp_path) if temp_path else None
+
+            return StreamingResponse(
+        generate_audio(),
+        media_type="audio/mpeg",
+        headers={
+            "Content-Disposition": 'attachment; filename="blog_audio.mp3"',
+            "X-Title": result.get("blog", {}).get("title", ""),
+            "X-Language": language
+        },
+        background=cleanup
+    )
+
+        # Text output
+        if temp_path:
+            cleanup_temp_file(temp_path)
         return JSONResponse({
             "title": result.get("blog", {}).get("title", ""),
             "content": result.get("blog", {}).get("content", ""),
@@ -173,11 +176,13 @@ async def create_blogs(
         })
 
     except Exception as e:
-        logger.error(f"Processing failed: {str(e)}")
+        if temp_path:
+            cleanup_temp_file(temp_path)
+        logger.error(f"Processing failed: {str(e)}", exc_info=True)
         return JSONResponse(
             {"error": "Processing failed", "details": str(e)},
             status_code=500
         )
 
 if __name__ == "__main__":
-    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True,timeout_keep_alive=300,timeout_graceful_shutdown=30)

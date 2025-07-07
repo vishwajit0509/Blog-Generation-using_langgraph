@@ -7,6 +7,8 @@ from pydub import AudioSegment
 from typing import Dict, Any
 import logging
 from elevenlabs.client import ElevenLabs
+#from elevenlabs import generate, save, Voice, VoiceSettings
+
 
 # Configure audio converter path
 AudioSegment.converter = "C:\\ffmpeg\\bin\\ffmpeg.exe"  # replace path if different
@@ -128,53 +130,36 @@ class BlogNode:
             raise
 
     def voice_output_node(self, state: BlogState) -> Dict[str, Any]:
-        """Convert blog content to speech using ElevenLabs API and save locally.
-        Args:
-        state: Current blog state containing content to convert
-        Returns:
-        Dict with either
-        - voice_output path and language on success
-        - error message on failure
-        """
+        """Convert blog content to speech using ElevenLabs API and save locally."""
         content = state.get("blog", {}).get("content", "")
         if not content:
             logger.warning("No content available for voice generation")
             return {}
+
         try:
             # Initialize ElevenLabs client
-            api_key = os.getenv("ELEVENLABS_API_KEY")
-            if not api_key:
-                raise ValueError("ElevenLabs API key not configured")  # Fixed: added 'raise'
-            # Configure voice settings
-            voice = "Rachel"  # Default voice (free tier)
-            model = "eleven_monolingual_v2"  # Free model
+            client = ElevenLabs(api_key=os.getenv("ELEVENLABS_API_KEY"))
         
-        
-            client = ElevenLabs(api_key=api_key)
-            audio = client.generate(
+        # Generate audio using the correct API method
+            audio = client.text_to_speech.convert(
             text=content,
-            voice=voice,
-            model=model
+            voice_id="EXAVITQu4vr4xnSDxMaL",  # Rachel's voice ID
+            model_id="eleven_monolingual_v2",
+            output_format="mp3_44100_128"
         )
         
-        # Save to temporary file
+        # Save to file
             output_path = "temp_audio_output.mp3"
-            try:
-                with open(output_path, "wb") as f:
-                    f.write(audio)  # ElevenLabs returns bytes directly
-            except IOError as e:
-                logger.error(f"Failed to save audio file: {e}")
-                return {"error": f"Could not save audio file: {str(e)}"}
-        
+            with open(output_path, "wb") as f:
+                f.write(audio)
+            
             return {
             "voice_output": output_path,
             "current_language": state.get("current_language")
         }
-
         except Exception as e:
             logger.error(f"Voice generation failed: {e}", exc_info=True)
             return {"error": str(e)}
-
 
     def route(self, state: BlogState) -> Dict[str, Any]:
         """Pass-through node for logging."""
