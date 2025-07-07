@@ -13,7 +13,7 @@ A multi-modal AI system that generates blogs from text/voice input with language
 
 ## 📂 Project Structure
 
-BLOG-GENERATION/
+'''BLOG-GENERATION/
 ├── blog/ # Virtual environment
 ├── src/ # Core source code
 │ ├── llms/ # LLM integrations
@@ -28,7 +28,7 @@ BLOG-GENERATION/
 ├── pyproject.toml # Project config
 ├── requirements.txt # Python dependencies
 └── langgraph.json # Workflow configuration
-
+'''
 
 
 ## 🚀 Quick Start
@@ -53,5 +53,12 @@ uv pip install -r requirements.txt
 # Start backend (FastAPI)
 python app.py
 
+![Backend](C:\Users\vishw\OneDrive\Desktop\AGENTIC AI\BLOG-GENERATION\images\backend.png)
+
+
 # Start frontend (Streamlit)
+
 streamlit run main.py
+
+![Backend](C:\Users\vishw\OneDrive\Desktop\AGENTIC AI\BLOG-GENERATION\images\frontend.png)
+
