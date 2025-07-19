@@ -101,7 +101,7 @@ uv pip install -r requirements.txt
 cp .env_example .env
 
 # Edit .env file with your API keys
-# - OpenAI API key
+# - GROQ API key
 # - ElevenLabs API key
 # - Other service credentials
 ```
@@ -116,12 +116,7 @@ python app.py
 streamlit run main.py
 ```
 
-## 🧪 Testing
 
-```bash
-# Run API tests
-python test_blog_requests.py
-```
 
 ## 📊 Development
 
