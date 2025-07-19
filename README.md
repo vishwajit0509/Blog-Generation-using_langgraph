@@ -15,20 +15,57 @@ A multi-modal AI system that generates blogs from text/voice input with language
 
 
 BLOG-GENERATION/
-├── blog/ # Virtual environment
-├── src/ # Core source code
-│ ├── llms/ # LLM integrations
-│ ├── nodes/ # Workflow nodes
-│ ├── states/ # State management
-│ └── ui/ # Streamlit interface
-├── static/ # Static assets
-├── temp_audio/ # Generated voice files
-├── .env # Environment variables
-├── app.py # FastAPI backend
-├── frontend.py # Streamlit frontend
-├── pyproject.toml # Project config
-├── requirements.txt # Python dependencies
-└── langgraph.json # Workflow configuration
+│
+├── blog/                           # Virtual environment
+│
+├── images/                         # Project images
+│   ├── backend.png
+│   └── frontend.png
+│
+├── src/                           # Core source code
+│   ├── graphs/                    # Graph structures
+│   │   ├── __pycache__/
+│   │   ├── __init__.py
+│   │   └── graph_builder.py
+│   │
+│   ├── llms/                      # LLM integrations
+│   │   ├── __pycache__/
+│   │   ├── __init__.py
+│   │   └── groqllm.py
+│   │
+│   ├── nodes/                     # Workflow nodes
+│   │   ├── __pycache__/
+│   │   ├── __init__.py
+│   │   └── blog_node.py
+│   │
+│   ├── states/                    # State management
+│   │   ├── __pycache__/
+│   │   ├── __init__.py
+│   │   └── blogstate.py
+│   │
+│   └── ui/                        # User interface
+│       ├── __pycache__/
+│       ├── streamlit/
+│       └── __init__.py
+│
+├── static/                        # Static assets
+│
+├── outputs/                       # Generated outputs
+│
+├── temp_audio/                    # Generated voice files
+│
+├── .env                          # Environment variables
+├── .env_example                  # Environment variables template
+├── .gitignore                    # Git ignore rules
+├── .python-version               # Python version specification
+├── app.py                        # FastAPI backend
+├── langgraph.json                # Workflow configuration
+├── main.py                       # Streamlit frontend
+├── pyproject.toml                # Project configuration
+├── requirements.txt              # Python dependencies
+├── research.ipynb                # Research notebook
+├── test_blog_requests.py         # API testing script
+└── uv.lock                       # UV lock file
 
 
 ## 🚀 Quick Start
