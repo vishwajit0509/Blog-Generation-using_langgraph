@@ -11,24 +11,7 @@ A multi-modal AI system that generates blogs from text/voice input with language
   - Adjust length (300-1000 words)
 - **Voice Synthesis**: ElevenLabs integration for audio output
 
-## 📂 Project Structure
-
-BLOG-GENERATION/
-├── blog/                  # Virtual environment
-├── src/                   # Core source code
-│   ├── llms/              # LLM integrations
-│   ├── nodes/             # Workflow nodes
-│   ├── states/            # State management
-│   └── ui/                # Streamlit interface
-├── static/                # Static assets
-├── temp_audio/            # Generated voice files
-├── .env                   # Environment variables
-├── app.py                 # FastAPI backend
-├── frontend.py            # Streamlit frontend
-├── pyproject.toml         # Project config
-├── requirements.txt       # Python dependencies
-└── langgraph.json         # Workflow configuration
-
+<pre><code> ## 📂 Project Structure ``` BLOG-GENERATION/ ├── blog/ # Virtual environment ├── src/ # Core source code │ ├── llms/ # LLM integrations │ ├── nodes/ # Workflow nodes │ ├── states/ # State management │ └── ui/ # Streamlit interface ├── static/ # Static assets ├── temp_audio/ # Generated voice files ├── .env # Environment variables ├── app.py # FastAPI backend ├── frontend.py # Streamlit frontend ├── pyproject.toml # Project config ├── requirements.txt # Python dependencies └── langgraph.json # Workflow configuration ``` </code></pre>
 
 
 ## 🚀 Quick Start
