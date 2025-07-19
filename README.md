@@ -15,45 +15,34 @@ A multi-modal AI system that generates blogs from text/voice input with language
 
 
 BLOG-GENERATION/
-│
 ├── blog/                           # Virtual environment
-│
 ├── images/                         # Project images
 │   ├── backend.png
 │   └── frontend.png
-│
 ├── src/                           # Core source code
 │   ├── graphs/                    # Graph structures
 │   │   ├── __pycache__/
 │   │   ├── __init__.py
 │   │   └── graph_builder.py
-│   │
 │   ├── llms/                      # LLM integrations
 │   │   ├── __pycache__/
 │   │   ├── __init__.py
 │   │   └── groqllm.py
-│   │
 │   ├── nodes/                     # Workflow nodes
 │   │   ├── __pycache__/
 │   │   ├── __init__.py
 │   │   └── blog_node.py
-│   │
 │   ├── states/                    # State management
 │   │   ├── __pycache__/
 │   │   ├── __init__.py
 │   │   └── blogstate.py
-│   │
 │   └── ui/                        # User interface
 │       ├── __pycache__/
 │       ├── streamlit/
 │       └── __init__.py
-│
 ├── static/                        # Static assets
-│
 ├── outputs/                       # Generated outputs
-│
 ├── temp_audio/                    # Generated voice files
-│
 ├── .env                          # Environment variables
 ├── .env_example                  # Environment variables template
 ├── .gitignore                    # Git ignore rules
@@ -93,5 +82,18 @@ python app.py
 # Start frontend (Streamlit)
 streamlit run main.py
 
+📊 Development
 
+research.ipynb - Jupyter notebook for experimentation and research
+langgraph.json - Configuration for workflow management
+pyproject.toml - Modern Python project configuration
+
+🔧 Architecture
+The system uses a modular architecture with:
+
+Graphs: Workflow management and orchestration
+LLMs: Language model integrations (Groq)
+Nodes: Individual processing components
+States: Application state management
+UI: User interface components (Streamlit)
 
